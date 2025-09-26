@@ -38,8 +38,6 @@ func main() {
 }
 ```
 
-## API
-
 ### func Create(path, fileName string) (bool, error)
 
 Creates a new empty file with the given name under the given path.
