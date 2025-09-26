@@ -1,36 +1,48 @@
-// Create new empty files with this
+// Create creates a new empty file at the specified path.
+// Returns true and nil if successful, false and error otherwise.
 package fileutil
 
-import(
-  "os"
-  "path/filepath"
-  "fmt"
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
-func create(path string, fileName string) (bool, error) {
-  // Will create an empty file with the given extension under the given path.
-  // If file already Exists, the function will stop with a error message "File already exists"
-  // Returns true and nil, if the file ws created successfully, and false and error if the file was not created
+// Create creates a new empty file with the given name under the given path.
+// If the file already exists, it returns false and an error.
+// Returns true and nil if the file was created successfully, false and error otherwise.
+// The function is platform independent.
 
-  fullPath := filepath.Join(path, fileName)
+func Create(path, fileName string) (bool, error) {
+	// Prevent directory traversal and invalid file names
+	if strings.Contains(fileName, "..") || strings.ContainsAny(fileName, `/\`) {
+		return false, fmt.Errorf("invalid file name")
+	}
 
-  // Checks if the file already exists
-  if _, err := os.Stat(fullPath); err == nil {
-    err := fmt.Errorf("File %v already exists", fileName)
-    return false, err
-  } else if !os.IsNotExist(err) {
-    err := fmt.Errorf("Another error occured when checking if the file %v exists", fileName)
-    return false, err
-  }
+	fullPath := filepath.Join(path, fileName)
 
-  // Create the new file
-  file, err := os.OpenFile(fullPath, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0644)
-  if err != nil {
-    err := fmt.Errorf("There was an error creating the file %v", fileName)
-    return false, err
-  }
-  defer file.Close()
+	// Convert to absolute path
+	absPath, err := filepath.Abs(fullPath)
+	if err != nil {
+		return false, fmt.Errorf("invalid path: %w", err)
+	}
 
-  // everything went well
-  return true, nil
+	// Check if the file already exists
+	if _, err := os.Stat(absPath); err == nil {
+		return false, fmt.Errorf("file %v already exists", fileName)
+	} else if !os.IsNotExist(err) {
+		return false, fmt.Errorf("error checking if file %v exists: %w", fileName, err)
+	}
+
+	// Create the new file (0644 is platform independent for regular files)
+  // Windows will ignore it though might add support for ACL someday.
+  // but that looks like a nightmare
+	file, err := os.OpenFile(absPath, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0644)
+	if err != nil {
+		return false, fmt.Errorf("error creating file %v: %w", fileName, err)
+	}
+	defer file.Close()
+
+	return true, nil
 }
