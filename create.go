@@ -15,9 +15,15 @@ import (
 // The function is platform independent.
 
 func Create(path, fileName string) (bool, error) {
-	// Prevent directory traversal and invalid file names
-	if strings.Contains(fileName, "..") || strings.ContainsAny(fileName, `/\`) {
-		return false, fmt.Errorf("invalid file name")
+	// Prevent directory traversal with the check traversal function
+
+	isTraversal, err := checkTraversal(path, filepath.Join(path, fileName))
+	if err != nil {
+		return false, fmt.Errorf("error checking path traversal: %w", err)
+	}
+	// Also ensure the fileName does not contain any path separators
+	if isTraversal || strings.Contains(fileName, string(os.PathSeparator)) {
+		return false, fmt.Errorf("invalid file name: %v", fileName)
 	}
 
 	fullPath := filepath.Join(path, fileName)
