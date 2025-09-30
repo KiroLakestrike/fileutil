@@ -9,3 +9,13 @@ package fileutil
 // The main purpose of this file, is to delete a given file at the specified path. 
 // Can be used to get rid of temporary files for examples, suring atomic copying for example.
 // Will return true and nil if everything worked well, or false and err, if there was an error.
+
+func Delete(path, fileName string) (bool, error) {
+	// Prevent directory traversal and invalid file names
+	if strings.Contains(fileName, "..") || strings.ContainsAny(fileName, `/\`) {
+		return false, fmt.Errorf("invalid file name")
+	}
+
+	fullPath := filepath.Join(path, fileName)
+
+}
